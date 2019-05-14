@@ -33,63 +33,67 @@ def load_and_preprocess_image(path):
   image = tf.io.read_file(path)
   return preprocess_image(image)
 
-print(sys.version)
+def make_dataset():
 
-tf.compat.v1.enable_eager_execution()
-tf.version.VERSION
+    print(sys.version)
 
-AUTOTUNE = tf.data.experimental.AUTOTUNE
-keras = tf.keras
+    tf.compat.v1.enable_eager_execution()
+    tf.version.VERSION
 
-data_root = "/home/sanne/Documents/RUG/DeepLearning/artsyrecognizer/resized/resizebyme"
-data_root = pathlib.Path(data_root)
-print(data_root)
+    AUTOTUNE = tf.data.experimental.AUTOTUNE
+    keras = tf.keras
 
-
-import random
-all_image_paths = list(data_root.glob('*.jpg'))
-all_image_paths = [str(path) for path in all_image_paths]
-random.shuffle(all_image_paths)
-
-image_count = len(all_image_paths)
-print(image_count)
-label_names = []
-for im_path in all_image_paths:
-    label_names += [path_to_label(im_path)]
-# print(label_names[:5])
-label_names = list(set(label_names))
-# print(label_names)
-
-label_to_index = dict((name, index) for index,name in enumerate(label_names))
-print(label_to_index)
-
-all_image_labels = []
-for path in all_image_paths:
-    for name in label_names:
-        if name.split(" ")[0] in path:
-            all_image_labels += [label_to_index[name]]
-            break
+    data_root = "/home/sanne/Documents/RUG/DeepLearning/artsyrecognizer/resized/resizebyme"
+    data_root = pathlib.Path(data_root)
+    print(data_root)
 
 
+    import random
+    all_image_paths = list(data_root.glob('*.jpg'))
+    all_image_paths = [str(path) for path in all_image_paths]
+    random.seed(313)
+    random.shuffle(all_image_paths)
 
-print("First 10 labels indices: ", all_image_labels[:10])
-print(all_image_paths[0])
+    image_count = len(all_image_paths)
+    print(image_count)
+    label_names = []
+    for im_path in all_image_paths:
+        label_names += [path_to_label(im_path)]
+    # print(label_names[:5])
+    label_names = list(set(label_names))
+    # print(label_names)
+
+    label_to_index = dict((name, index) for index,name in enumerate(label_names))
+    print(label_to_index)
+
+    all_image_labels = []
+    for path in all_image_paths:
+        for name in label_names:
+            if name.split(" ")[0] in path:
+                all_image_labels += [label_to_index[name]]
+                break
 
 
 
-img_path = all_image_paths[0]
-label = all_image_labels[0]
+    print("First 10 labels indices: ", all_image_labels[:10])
+    print(all_image_paths[0])
 
-plt.imshow(load_and_preprocess_image(img_path))
-plt.grid(False)
-plt.title(label_names[label].title())
-print()
 
-path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)
-image_ds = path_ds.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
-label_ds = tf.data.Dataset.from_tensor_slices(tf.cast(all_image_labels, tf.int64))
 
-for label in label_ds.take(10):
-  print(label_names[label.numpy()])
+    img_path = all_image_paths[0]
+    label = all_image_labels[0]
 
-image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
+    plt.imshow(load_and_preprocess_image(img_path))
+    plt.grid(False)
+    plt.title(label_names[label].title())
+    print()
+
+    path_ds = tf.data.Dataset.from_tensor_slices(all_image_paths)
+    image_ds = path_ds.map(load_and_preprocess_image, num_parallel_calls=AUTOTUNE)
+    label_ds = tf.data.Dataset.from_tensor_slices(tf.cast(all_image_labels, tf.int64))
+
+    for label in label_ds.take(10):
+      print(label_names[label.numpy()])
+
+    image_label_ds = tf.data.Dataset.zip((image_ds, label_ds))
+    return image_label_ds, image_count, label_names
